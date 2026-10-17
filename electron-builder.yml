@@ -1,0 +1,13 @@
+appId: art.artifact.westbund
+productName: ARTIFACT West Bund
+directories:
+  output: release
+files:
+  - electron/**
+  - out/**
+  - package.json
+mac:
+  category: public.app-category.entertainment
+  target: [dmg, zip]
+win:
+  target: nsis
