@@ -1,4 +1,3 @@
-// public/covers/NN.webp with pixel sizes. Shared by the slideshow and the pointer covers.
 const ENTRIES = [
   [1, 453, 640], [2, 640, 426], [3, 453, 640], [4, 418, 640], [5, 640, 426], [6, 640, 360],
   [7, 427, 640], [8, 640, 480], [9, 466, 640], [10, 424, 640], [11, 442, 640], [12, 512, 640],

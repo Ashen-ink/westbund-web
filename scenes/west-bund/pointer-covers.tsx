@@ -1,25 +1,14 @@
 "use client";
 
 import gsap from "gsap";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { COVERS } from "@/data/covers";
 
-export interface Zone {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
-const SPAWN_DISTANCE = 100; // pointer travel between covers, in px
+const SPAWN_DISTANCE = 100;
 const RADIUS = 3;
-const SIZE = "clamp(220px, 20vw, 400px)"; // the fixed side of each cover
+const SIZE = "clamp(220px, 20vw, 400px)";
 
-/**
- * Covers that drop in behind the mouse as it moves: each starts tilted at the trailing
- * position, swings level onto the pointer, then shrinks away. Only reacts inside `zone`.
- */
-export function PointerCovers({ zone }: { zone: Zone }) {
+export function PointerCovers({ area }: { area: RefObject<HTMLElement | null> }) {
   const layer = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,19 +53,19 @@ export function PointerCovers({ zone }: { zone: Zone }) {
     };
     const move = (event: PointerEvent) => {
       if (event.pointerType !== "mouse") return;
+      const zone = area.current?.getBoundingClientRect();
       const inside =
+        zone !== undefined &&
         event.clientX >= zone.left &&
-        event.clientX < zone.left + zone.width &&
+        event.clientX < zone.right &&
         event.clientY >= zone.top &&
-        event.clientY < zone.top + zone.height;
+        event.clientY < zone.bottom;
       if (!inside) {
         anchored = false;
         return;
       }
       pointer.x = event.clientX;
       pointer.y = event.clientY;
-      // Anchor only on the first move or after leaving; re-anchoring on every ticker
-      // restart would reset the spawn distance before it could accumulate.
       if (!anchored) {
         lag.x = last.x = pointer.x;
         lag.y = last.y = pointer.y;
@@ -93,7 +82,7 @@ export function PointerCovers({ zone }: { zone: Zone }) {
       stopTicking();
       animations.forEach((animation) => animation.kill());
     };
-  }, [zone.left, zone.top, zone.width, zone.height]);
+  }, [area]);
 
   return (
     <div
@@ -104,7 +93,6 @@ export function PointerCovers({ zone }: { zone: Zone }) {
       {COVERS.map(({ src, width, height }) => {
         const wide = width >= height;
         return (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             key={src}
             src={src}

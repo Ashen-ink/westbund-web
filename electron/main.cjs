@@ -2,20 +2,19 @@ const { app, ipcMain, protocol, net, powerSaveBlocker, globalShortcut } = requir
 const path = require("path");
 const { pathToFileURL } = require("url");
 const { loadConfig, saveConfig, showStore } = require("./config.cjs");
-const { Node } = require("./node.cjs");
+const { Session } = require("./session.cjs");
 const screens = require("./screens.cjs");
 
 const OUT = path.join(__dirname, "..", "out");
 const DEV_URL = process.env.ELECTRON_START_URL;
 
-// Serve the static export over app:// so canvas reads of local images are not tainted (as file:// would be).
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
 
 if (!app.requestSingleInstanceLock()) app.quit();
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   protocol.handle("app", (request) => {
     let pathname = decodeURIComponent(new URL(request.url).pathname);
     if (pathname.endsWith("/")) pathname += "index.html";
@@ -27,13 +26,13 @@ app.whenReady().then(() => {
   globalShortcut.register("CommandOrControl+Shift+Q", () => app.quit());
 
   const config = loadConfig();
-  const node = new Node({ config, saveConfig, store: showStore });
-  ipcMain.handle("westbund:set-role", (_event, role) => node.setRole(role));
-  ipcMain.handle("westbund:command", (_event, cmd) => node.command(cmd));
-  app.on("before-quit", () => node.destroy());
+  const session = new Session({ config, saveConfig, store: showStore, outDir: OUT });
+  ipcMain.handle("westbund:set-role", (_event, choice) => session.setRole(choice));
+  ipcMain.handle("westbund:set-name", (_event, name) => session.setName(name));
+  app.on("before-quit", () => void session.stop());
 
-  node.start();
-  screens.start({ url: DEV_URL ?? "app://exhibit/", node, deviceId: config.deviceId });
+  await session.start();
+  screens.start({ url: DEV_URL ?? "app://exhibit/", session, deviceId: config.deviceId });
 });
 
 app.on("window-all-closed", () => app.quit());

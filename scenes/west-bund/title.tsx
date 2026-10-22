@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { palette } from "@/core/palette";
 import type { Scheduler } from "@/core/scheduler";
 import { marqueeOffset } from "@/core/timeline";
-import { useFrame } from "./use-frame";
+import { useFrame } from "@/hooks/use-frame";
 
 const START = 54;
 const GAP = 220;
@@ -14,10 +14,6 @@ const roman = { fontWeight: 400, fontStyle: "normal", fill: palette.blue, letter
 const italic = { fontWeight: 400, fontStyle: "italic", fill: palette.olive, fontSize: 100, letterSpacing: -3 } as const;
 const ink = { fontWeight: 400, fill: palette.ink, letterSpacing: -1.5 } as const;
 
-/**
- * The continuous title line: Issue 01 set like its cover, then Issue 02's three words.
- * Words are spaced by GAP and the line loops; its position is a pure function of show time.
- */
 export function Title({ scheduler }: { scheduler: Scheduler }) {
   const words = useRef<(SVGTextElement | null)[]>([]);
   const track = useRef<SVGGElement>(null);

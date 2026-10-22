@@ -2,7 +2,6 @@ import { palette } from "@/core/palette";
 
 const note = { fill: palette.ink, fontWeight: 500, fontSize: 22 } as const;
 
-/** Small event annotation in the top right of the editorial rectangle. */
 export function Notes() {
   return (
     <g transform="translate(1866 0)" textAnchor="end">

@@ -9,6 +9,7 @@
         "ws": "^8.22.0",
       },
       "devDependencies": {
+        "@central-icons-react/all": "^1.2.19",
         "@types/bun": "latest",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
@@ -26,6 +27,8 @@
     "electron",
   ],
   "packages": {
+    "@central-icons-react/all": ["@central-icons-react/all@1.2.19", "", { "peerDependencies": { "react": ">=16.6.0 <20" } }, "sha512-ln9dPk/jw9gnOIYn4GaiscbwjkalD8hwxSO9N0aHP2g4rU69n+x4pU2RiqmIG+aHMz29NPKcQ9Z9yg4OphyE3w=="],
+
     "@electron-internal/extract-zip": ["@electron-internal/extract-zip@1.0.6", "", {}, "sha512-/aQLgFDdCSnwChfUwqekSmE1q2dCTzhUy5saIHBb5vyYn5LzWaKPaIz1wM0lDMCZYBoIG4svJNvAJb6vkI8BuA=="],
 
     "@electron/asar": ["@electron/asar@3.4.1", "", { "dependencies": { "commander": "^5.0.0", "glob": "^7.1.6", "minimatch": "^3.0.4" }, "bin": { "asar": "bin/asar.js" } }, "sha512-i4/rNPRS84t0vSRa2HorerGRXWyF4vThfHesw0dmcWHp+cspK743UanA0suA5Q5y8kzY2y6YKrvbIUn69BCAiA=="],

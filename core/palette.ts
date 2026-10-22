@@ -1,4 +1,3 @@
-// ARTIFACT palette. Canvas and SVG both read these.
 export const palette = {
   blue: "#1546b0",
   olive: "#727343",

@@ -23,13 +23,12 @@ function writeJson(name, value) {
   }
 }
 
-/** This machine's identity and role: { deviceId, name, role: "host" | "client", hostAddress }. */
 function loadConfig() {
   const config = {
     deviceId: crypto.randomUUID(),
     name: os.hostname(),
-    role: "host", // a lone machine works out of the box
-    hostAddress: null, // null: join whichever host is discovered
+    role: "host",
+    hostAddress: null,
     ...readJson("config.json"),
   };
   writeJson("config.json", config);
@@ -38,7 +37,6 @@ function loadConfig() {
 
 const saveConfig = (config) => writeJson("config.json", config);
 
-/** The last known show state, so a restart (or a lost host) keeps the wall as it was. */
 const showStore = { load: () => readJson("show.json"), save: (state) => writeJson("show.json", state) };
 
 module.exports = { loadConfig, saveConfig, showStore };

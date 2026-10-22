@@ -5,15 +5,13 @@ import { developRank, loadImage, printTexture, type PrintTexture } from "@/core/
 import { createMorph, drawMorph, MORPH_SCALE, type Morph } from "@/core/particles";
 import type { Scheduler } from "@/core/scheduler";
 import { photoFrame } from "@/core/timeline";
-import { useFrame } from "./use-frame";
+import { useFrame } from "@/hooks/use-frame";
 
 interface Props {
   scheduler: Scheduler;
   slides: string[];
-  /** Dot grid for the photograph: columns × rows cells. */
   columns: number;
   rows: number;
-  /** CSS box of the photograph within the screen, in pixels. */
   box: { left: number; top: number; width: number; height: number };
 }
 
@@ -22,14 +20,11 @@ const LEVELS = 32;
 interface Prepared {
   images: HTMLImageElement[];
   textures: PrintTexture[];
-  /** Dissolve masks by level: which cells still show dots. */
   masks: Map<number, HTMLCanvasElement>;
   scratch: HTMLCanvasElement;
-  /** Morphs by "from:to", made while a slide is held. */
   morphs: Map<string, Morph | null>;
 }
 
-/** The slides: blue print dots develop into the photograph, then fly into the next slide, on the shared clock. */
 export function Photo({ scheduler, slides, columns, rows, box }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const prepared = useRef<Prepared | null>(null);
@@ -70,7 +65,6 @@ export function Photo({ scheduler, slides, columns, rows, box }: Props) {
         context.drawImage(ready.textures[index].canvas, 0, 0, width, height);
         return;
       }
-      // Photograph underneath, dots on top through a mask of the cells not yet developed.
       const image = ready.images[index];
       const fit = Math.max(width / image.width, height / image.height);
       context.imageSmoothingEnabled = true;
@@ -110,7 +104,7 @@ export function Photo({ scheduler, slides, columns, rows, box }: Props) {
       return ready.morphs.get(key) ?? null;
     };
     if (frame.kind === "still") {
-      morphOf(frame.index, (frame.index + 1) % slides.length); // prepared while the slide is held
+      morphOf(frame.index, (frame.index + 1) % slides.length);
       return still(frame.index, frame.develop);
     }
     const morph = morphOf(frame.from, frame.to);

@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export interface Box {
+interface Box {
   width: number;
   height: number;
 }
 
-/** Pixel size of an element; null until first measured. */
 export function useBox<T extends HTMLElement>() {
   const ref = useRef<T>(null);
   const [box, setBox] = useState<Box | null>(null);

@@ -4,6 +4,7 @@ directories:
   output: release
 files:
   - electron/**
+  - hub/**
   - out/**
   - package.json
 mac:

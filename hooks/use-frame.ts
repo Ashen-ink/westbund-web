@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-/** Calls `callback` every animation frame while mounted. */
 export function useFrame(callback: () => void) {
   const latest = useRef(callback);
   useEffect(() => {

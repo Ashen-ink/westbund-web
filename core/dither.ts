@@ -1,30 +1,22 @@
+import { smooth } from "./math";
 import { palette, rgb } from "./palette";
 
-// The original ARTIFACT Bayer matrix, luminance curve and ink/paper colours.
 const BAYER = [
   0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26,
   12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22,
   3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25,
   15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21,
 ];
-/** Rank 0–63 of a cell in the dissolve order that turns dots into the photograph. */
 export const developRank = (x: number, y: number) => BAYER[((y + 5) % 8) * 8 + ((x + 3) % 8)];
 
 const INK = rgb(palette.blue);
 const PAPER = rgb(palette.paper);
 
-const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
-const smooth = (amount: number) => {
-  const t = clamp(amount);
-  return t * t * (3 - 2 * t);
-};
 
 export interface PrintTexture {
   columns: number;
   rows: number;
-  /** 1 where a dot is inked, row-major. */
   dots: Uint8Array;
-  /** The same dots as ink/paper pixels, one pixel per cell. */
   canvas: HTMLCanvasElement;
 }
 
@@ -37,7 +29,6 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Cover-fit the image into columns×rows cells and dither it to ink/paper. */
 export function printTexture(image: HTMLImageElement, columns: number, rows: number): PrintTexture | null {
   const canvas = document.createElement("canvas");
   canvas.width = columns;

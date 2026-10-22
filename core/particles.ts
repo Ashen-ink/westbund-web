@@ -1,81 +1,14 @@
+import { clamp, smooth } from "./math";
 import { palette, rgb } from "./palette";
 import type { PrintTexture } from "./dither";
 
-/*
- * ParticleSaga — Canvas adaptation of ParticlePool.setTarget,
- * nextIndexForPool and VertexSort.leftToRight. Upstream:
- * https://github.com/blakecarroll/particle-saga/tree/933986b4188bf758201f5ab27c3f74b1ce1878de
- *
- * The MIT License (MIT)
- * Copyright (c) 2014 Blake Carroll
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * Adaptations: enumerate every ink cell instead of randomly sampling pixels;
- * dots inked in both slides stay put and only the differing ones travel, each
- * to its nearest free cell; every dot has its own departure time, duration and
- * gently bowed cubic path, with Motion spring timing. When the counts differ,
- * several particles share a cell, merging or splitting on the way.
- */
-
-/*
- * Motion: critically damped resolver, specialised to origin 0, target 1,
- * zero initial velocity and visualDuration 1s (bounce 0). Source:
- * https://github.com/motiondivision/motion/blob/2d27b041114f5f1cffc1f6d3ad522929ce0cc41f/packages/motion-dom/src/animation/generators/spring.ts
- *
- * The MIT License (MIT)
- * Copyright (c) 2024 Motion (https://motion.dev) B.V.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
-/** Seconds of the critically damped spring that one dot's journey is stretched over. */
 const SPRING_SECONDS = 1.5;
-/** Canvas pixels per dot while morphing. */
 export const MORPH_SCALE = 4;
-/** Latest departure, as a fraction of the morph; everything has landed by 1. */
 const MAX_DELAY = 0.4;
 const BUCKET = 8;
 
 const INK = rgb(palette.blue);
 
-const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
-const smooth = (amount: number) => {
-  const t = clamp(amount);
-  return t * t * (3 - 2 * t);
-};
 
 function motionCriticalSpring(seconds: number, visualDuration: number) {
   const frequency = (2 * Math.PI) / (visualDuration * 1.2);
@@ -85,20 +18,15 @@ function motionCriticalSpring(seconds: number, visualDuration: number) {
 const springTable = Float64Array.from({ length: 1025 }, (_, index) => {
   const t = index / 1024;
   const spring = motionCriticalSpring(t * SPRING_SECONDS, 1);
-  // The native spring approaches 1 asymptotically. Resolve only the final
-  // sub-pixel remainder smoothly, without a snap when the still takes over.
   return spring + (1 - spring) * smooth((t - 0.85) / 0.15);
 });
 
 function springEase(t: number) {
-  // One sampled spring is shared across all dots instead of evaluating an
-  // exponential per dot per frame.
   const position = clamp(t) * 1024;
   const index = Math.min(1023, Math.floor(position));
   return springTable[index] + (springTable[index + 1] - springTable[index]) * (position - index);
 }
 
-/** Deterministic pseudo-random generator (mulberry32). */
 function random(seed: number) {
   let state = seed >>> 0;
   return () => {
@@ -109,7 +37,6 @@ function random(seed: number) {
   };
 }
 
-/** Cells bucketed on a coarse grid for nearest-neighbour lookups. */
 class Grid {
   private cells: number[][];
   private across: number;
@@ -182,16 +109,10 @@ class Grid {
 export interface Morph {
   columns: number;
   rows: number;
-  /** Dots inked in both slides, drawn still. */
   stay: HTMLCanvasElement;
-  /** Per travelling dot: start xy, delta xy, two bezier controls xy, delay, duration (10 floats, times as fractions of the morph). */
   paths: Float32Array;
 }
 
-/**
- * Pair each differing dot with the nearest free cell on the other side, so dots slip to a
- * neighbouring spot where they can and only travel far where the images really differ.
- */
 function pair(leaving: number[], arriving: number[], columns: number, rows: number, seed: number) {
   const free = new Grid(columns, rows);
   const all = new Grid(columns, rows);
@@ -206,7 +127,6 @@ function pair(leaving: number[], arriving: number[], columns: number, rows: numb
   const to: number[] = [];
   const claimed = new Set<number>();
   for (const cell of order) {
-    // Once every leaving dot has a destination, extra arrivals are served by a copy of a nearby one.
     const source = free.size ? free.nearest(cell) : all.nearest(cell);
     if (free.size) {
       free.remove(source);
@@ -216,7 +136,6 @@ function pair(leaving: number[], arriving: number[], columns: number, rows: numb
     to.push(cell);
   }
   if (claimed.size < leaving.length) {
-    // More leaving dots than arrival cells: the rest merge into the nearest arrival.
     const targets = new Grid(columns, rows);
     arriving.forEach((id) => targets.add(id));
     for (const source of leaving) {
@@ -228,7 +147,6 @@ function pair(leaving: number[], arriving: number[], columns: number, rows: numb
   return { from, to };
 }
 
-/** The morph from slide `a` to slide `b`: only the dots that differ move. */
 export function createMorph(a: PrintTexture, b: PrintTexture, seed: number): Morph | null {
   const { columns, rows } = a;
   const shared: number[] = [];
@@ -250,7 +168,6 @@ export function createMorph(a: PrintTexture, b: PrintTexture, seed: number): Mor
   for (const id of shared) pixels.data.set([INK[0], INK[1], INK[2], 255], id * 4);
   context.putImageData(pixels, 0, 0);
 
-  // If one side has no differing dots, the other side's dots travel from/to the shared ones.
   const sources = leaving.length ? leaving : shared;
   const targets = arriving.length ? arriving : shared;
   if (!sources.length || !targets.length) return null;
@@ -265,10 +182,8 @@ export function createMorph(a: PrintTexture, b: PrintTexture, seed: number): Mor
     const dx = (to[i] % columns) - x;
     const dy = Math.floor(to[i] / columns) - y;
     const length = Math.hypot(dx, dy) || 1;
-    // Each dot leaves on its own and takes its own time; none move as a sheet.
     const delay = MAX_DELAY * dice();
     const duration = (1 - delay) * (0.6 + 0.4 * dice());
-    // A gentle bow, part shared with neighbours and part the dot's own, so paths cross and curl.
     const bow = (0.5 * Math.sin((x / columns) * 5.1 + (y / rows) * 3.3 + seed * 1.7) + 0.5 * (dice() * 2 - 1)) * 0.3 * length;
     const nx = -dy / length;
     const ny = dx / length;

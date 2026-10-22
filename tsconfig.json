@@ -41,6 +41,7 @@
     "legacy",
     "electron",
     "out",
-    "release"
+    "release",
+    "scripts"
   ]
 }
