@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { loadImage, printTexture, type PrintTexture } from "@/core/dither";
-import { buildPool, drawMorph, MORPH_SCALE, particlePaths, type ParticlePool } from "@/core/particles";
+import { developRank, loadImage, printTexture, type PrintTexture } from "@/core/dither";
+import { createMorph, drawMorph, MORPH_SCALE, type Morph } from "@/core/particles";
 import type { Scheduler } from "@/core/scheduler";
 import { photoFrame } from "@/core/timeline";
 import { useFrame } from "./use-frame";
@@ -17,17 +17,23 @@ interface Props {
   box: { left: number; top: number; width: number; height: number };
 }
 
+const LEVELS = 32;
+
 interface Prepared {
+  images: HTMLImageElement[];
   textures: PrintTexture[];
-  pool: ParticlePool | null;
-  paths: Map<number, Float32Array>;
+  /** Dissolve masks by level: which cells still show dots. */
+  masks: Map<number, HTMLCanvasElement>;
+  scratch: HTMLCanvasElement;
+  /** Morphs by "from:to", made while a slide is held. */
+  morphs: Map<string, Morph | null>;
 }
 
-/** The slides as blue print dots, morphing from one to the next on the shared clock. */
+/** The slides: blue print dots develop into the photograph, then fly into the next slide, on the shared clock. */
 export function Photo({ scheduler, slides, columns, rows, box }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const prepared = useRef<Prepared | null>(null);
-  const drawn = useRef<number | null>(null);
+  const drawn = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,9 +44,7 @@ export function Photo({ scheduler, slides, columns, rows, box }: Props) {
       const textures = images.map((image) => printTexture(image, columns, rows));
       if (cancelled || textures.some((texture) => !texture)) return;
       const ready = textures as PrintTexture[];
-      prepared.current = { textures: ready, pool: null, paths: new Map() };
-      const pool = await buildPool(ready, () => cancelled);
-      if (!cancelled && prepared.current) prepared.current.pool = pool;
+      prepared.current = { images, textures: ready, masks: new Map(), scratch: document.createElement("canvas"), morphs: new Map() };
     })();
     return () => {
       cancelled = true;
@@ -54,23 +58,65 @@ export function Photo({ scheduler, slides, columns, rows, box }: Props) {
     if (!element || !ready || !context) return;
     const frame = photoFrame(scheduler.now(), slides.length);
 
-    const still = (index: number) => {
-      if (drawn.current === index) return;
-      drawn.current = index;
+    const still = (index: number, develop: number) => {
+      const level = Math.round(develop * LEVELS);
+      const key = `${index}:${level}`;
+      if (drawn.current === key) return;
+      drawn.current = key;
+      const { width, height } = element;
       context.setTransform(1, 0, 0, 1, 0, 0);
-      context.imageSmoothingEnabled = false;
-      context.drawImage(ready.textures[index].canvas, 0, 0, element.width, element.height);
+      if (level === 0) {
+        context.imageSmoothingEnabled = false;
+        context.drawImage(ready.textures[index].canvas, 0, 0, width, height);
+        return;
+      }
+      // Photograph underneath, dots on top through a mask of the cells not yet developed.
+      const image = ready.images[index];
+      const fit = Math.max(width / image.width, height / image.height);
+      context.imageSmoothingEnabled = true;
+      context.drawImage(image, (width - image.width * fit) / 2, (height - image.height * fit) / 2, image.width * fit, image.height * fit);
+      if (level === LEVELS) return;
+      let mask = ready.masks.get(level);
+      if (!mask) {
+        mask = document.createElement("canvas");
+        mask.width = columns;
+        mask.height = rows;
+        const mc = mask.getContext("2d")!;
+        const pixels = mc.createImageData(columns, rows);
+        for (let y = 0; y < rows; y++)
+          for (let x = 0; x < columns; x++)
+            pixels.data[(y * columns + x) * 4 + 3] = developRank(x, y) < (1 - level / LEVELS) * 64 ? 255 : 0;
+        mc.putImageData(pixels, 0, 0);
+        ready.masks.set(level, mask);
+      }
+      const { scratch } = ready;
+      if (scratch.width !== width || scratch.height !== height) {
+        scratch.width = width;
+        scratch.height = height;
+      }
+      const sc = scratch.getContext("2d")!;
+      sc.imageSmoothingEnabled = false;
+      sc.globalCompositeOperation = "source-over";
+      sc.clearRect(0, 0, width, height);
+      sc.drawImage(ready.textures[index].canvas, 0, 0, width, height);
+      sc.globalCompositeOperation = "destination-in";
+      sc.drawImage(mask, 0, 0, width, height);
+      context.drawImage(scratch, 0, 0);
     };
 
-    if (frame.kind === "still") return still(frame.index);
-    if (!ready.pool) return still(frame.progress < 0.5 ? frame.from : frame.to);
-    let paths = ready.paths.get(frame.from);
-    if (!paths) {
-      paths = particlePaths(ready.pool, frame.from, frame.to);
-      ready.paths.set(frame.from, paths);
+    const morphOf = (from: number, to: number) => {
+      const key = `${from}:${to}`;
+      if (!ready.morphs.has(key)) ready.morphs.set(key, createMorph(ready.textures[from], ready.textures[to], from));
+      return ready.morphs.get(key) ?? null;
+    };
+    if (frame.kind === "still") {
+      morphOf(frame.index, (frame.index + 1) % slides.length); // prepared while the slide is held
+      return still(frame.index, frame.develop);
     }
+    const morph = morphOf(frame.from, frame.to);
+    if (!morph) return still(frame.progress < 0.5 ? frame.from : frame.to, 0);
     drawn.current = null;
-    drawMorph(context, ready.pool, paths, frame.progress);
+    drawMorph(context, morph, frame.progress);
   });
 
   return (

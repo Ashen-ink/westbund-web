@@ -7,6 +7,9 @@ const BAYER = [
   3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25,
   15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21,
 ];
+/** Rank 0–63 of a cell in the dissolve order that turns dots into the photograph. */
+export const developRank = (x: number, y: number) => BAYER[((y + 5) % 8) * 8 + ((x + 3) % 8)];
+
 const INK = rgb(palette.blue);
 const PAPER = rgb(palette.paper);
 
