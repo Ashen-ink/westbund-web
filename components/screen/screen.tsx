@@ -1,6 +1,7 @@
 "use client";
 
-import slides from "@/data/slides.json";
+import { PointerCovers } from "@/components/covers/pointer-covers";
+import { COVERS } from "@/data/covers";
 import { palette } from "@/core/palette";
 import type { Scheduler } from "@/core/scheduler";
 import { PHOTO, SCREEN_COUNT, SCREEN_HEIGHT, SCREEN_WIDTH, WORLD_WIDTH, screenX } from "@/core/world";
@@ -11,6 +12,8 @@ import { useBox } from "./use-box";
 
 // In overview a screen is never drawn narrower than this; a wider wall scrolls sideways.
 const MIN_OVERVIEW_SCREEN_PX = 640;
+
+const slides = COVERS.map((cover) => cover.src);
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -32,6 +35,7 @@ export function Screen({ screen, mode, scheduler }: Props) {
   const viewWidth = overview ? WORLD_WIDTH : SCREEN_WIDTH;
 
   let content = null;
+  let covers = null;
   if (box) {
     // The area the view is drawn into: the whole window, or the wall's 48:9 shape centred in it.
     let stage = { left: 0, top: 0, width: box.width, height: box.height };
@@ -48,13 +52,20 @@ export function Screen({ screen, mode, scheduler }: Props) {
     const photoWidth = PHOTO.width * scale;
     const columns = clamp(Math.round(photoWidth / 1.5 / 16) * 16, 96, 384);
     const rows = Math.round((columns * stage.height) / photoWidth);
+    // The pointer-following covers belong to the two left screens.
+    const zone = overview
+      ? { left: stage.left, top: stage.top, width: 2 * SCREEN_WIDTH * scale, height: stage.height }
+      : screen <= 2
+        ? { left: 0, top: 0, width: box.width, height: box.height }
+        : null;
+    if (zone) covers = <PointerCovers zone={zone} />;
     content = (
       <div style={{ position: "absolute", background: palette.paper, ...stage }}>
         <svg width={stage.width} height={stage.height} viewBox={`${left} 0 ${viewWidth} ${height}`} style={{ display: "block" }}>
           <g transform={`translate(0 ${extra / 2})`}>
             <Title scheduler={scheduler} />
           </g>
-          <Notes bottom={height} />
+          <Notes />
           {overview && (
             <rect x={0.75} y={0.75} width={WORLD_WIDTH - 1.5} height={height - 1.5} fill="none" stroke="#000" strokeOpacity={0.15} strokeWidth={1.5} />
           )}
@@ -90,6 +101,7 @@ export function Screen({ screen, mode, scheduler }: Props) {
       }}
     >
       {content}
+      {covers}
     </div>
   );
 }

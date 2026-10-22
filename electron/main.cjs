@@ -1,6 +1,8 @@
-const { app, protocol, net, powerSaveBlocker, globalShortcut } = require("electron");
+const { app, ipcMain, protocol, net, powerSaveBlocker, globalShortcut } = require("electron");
 const path = require("path");
 const { pathToFileURL } = require("url");
+const { loadConfig, saveConfig, showStore } = require("./config.cjs");
+const { Node } = require("./node.cjs");
 const screens = require("./screens.cjs");
 
 const OUT = path.join(__dirname, "..", "out");
@@ -23,7 +25,15 @@ app.whenReady().then(() => {
   });
   powerSaveBlocker.start("prevent-display-sleep");
   globalShortcut.register("CommandOrControl+Shift+Q", () => app.quit());
-  screens.start(DEV_URL ?? "app://exhibit/");
+
+  const config = loadConfig();
+  const node = new Node({ config, saveConfig, store: showStore });
+  ipcMain.handle("westbund:set-role", (_event, role) => node.setRole(role));
+  ipcMain.handle("westbund:command", (_event, cmd) => node.command(cmd));
+  app.on("before-quit", () => node.destroy());
+
+  node.start();
+  screens.start({ url: DEV_URL ?? "app://exhibit/", node, deviceId: config.deviceId });
 });
 
 app.on("window-all-closed", () => app.quit());
