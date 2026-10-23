@@ -2,8 +2,8 @@
 
 import { useRef } from "react";
 import { clamp } from "@/core/math";
-import { PHOTO, SCREEN_HEIGHT, SCREEN_WIDTH } from "@/core/world";
-import { COVERS } from "@/data/covers";
+import { SCREEN_HEIGHT, SCREEN_WIDTH } from "@/core/world";
+import { COVERS } from "./covers";
 import type { SceneProps } from "../types";
 import { Notes } from "./notes";
 import { Photo } from "./photo";
@@ -12,10 +12,11 @@ import { Title } from "./title";
 
 const slides = COVERS.map((cover) => cover.src);
 const COVERS_WIDTH = 2 * SCREEN_WIDTH;
+const PHOTO = { x: 2 * SCREEN_WIDTH, width: SCREEN_WIDTH };
 
 export function WestBundScene({ viewport, scheduler }: SceneProps) {
   const area = useRef<HTMLDivElement>(null);
-  const { left, width, height, scale, pixelWidth, pixelHeight } = viewport;
+  const { group, left, width, height, scale, pixelWidth, pixelHeight } = viewport;
   const extra = height - SCREEN_HEIGHT;
 
   const photoLeft = (PHOTO.x - left) * scale;
@@ -25,6 +26,7 @@ export function WestBundScene({ viewport, scheduler }: SceneProps) {
   const coversLeft = -left * scale;
   const coversWidth = COVERS_WIDTH * scale;
 
+  if (group !== "left") return null;
   return (
     <>
       <svg width={pixelWidth} height={pixelHeight} viewBox={`${left} 0 ${width} ${height}`} style={{ display: "block" }}>

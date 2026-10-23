@@ -8,7 +8,7 @@ const ENTRIES = [
 ] as const;
 
 export const COVERS = ENTRIES.map(([id, width, height]) => ({
-  src: `/covers/${String(id).padStart(2, "0")}.webp`,
+  src: `/scenes/scene-1/covers/${String(id).padStart(2, "0")}.webp`,
   width,
   height,
 }));

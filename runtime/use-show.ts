@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SCREEN_COUNT, wrapScreen } from "@/core/world";
+import { wrapScreen } from "@/core/world";
 import type { ElectronInfo } from "./electron";
 import { HubClient, type LinkStatus } from "./hub-client";
 import { hubUrl, SCENE_COUNT, type Layout, type RosterEntry } from "./protocol";
@@ -70,7 +70,6 @@ const typing = (target: EventTarget | null) =>
 export interface ShowView {
   ready: boolean;
   screen: number;
-  screens: number;
   scene: number;
   layout: Layout;
   status: LinkStatus;
@@ -261,7 +260,6 @@ export function useShow(): ShowView {
   return {
     ready: known && (!url || heard || waited),
     screen: local?.screen ?? 1,
-    screens: SCREEN_COUNT,
     scene: local?.scene ?? 1,
     layout: local?.layout ?? "screen",
     status,

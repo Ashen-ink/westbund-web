@@ -4,3 +4,4 @@ node_modules
 .claude
 out
 .westbund
+tsconfig.tsbuildinfo

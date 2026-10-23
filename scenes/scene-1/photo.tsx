@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { developRank, loadImage, printTexture, type PrintTexture } from "@/core/dither";
-import { createMorph, drawMorph, MORPH_SCALE, type Morph } from "@/core/particles";
+import { developRank, loadImage, printTexture, type PrintTexture } from "./dither";
+import { createMorph, drawMorph, MORPH_SCALE, type Morph } from "./particles";
 import type { Scheduler } from "@/core/scheduler";
-import { photoFrame } from "@/core/timeline";
+import { photoFrame } from "./timeline";
 import { useFrame } from "@/hooks/use-frame";
 
 interface Props {

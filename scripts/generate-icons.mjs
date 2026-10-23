@@ -8,7 +8,7 @@ const entry = [path.join(repoRoot, "node_modules/@central-icons-react/all/index.
   (candidate) => fs.existsSync(candidate),
 );
 
-const scanRoots = ["app", "components", "runtime"].map((directory) =>
+const scanRoots = ["app", "components", "runtime", "scenes"].map((directory) =>
   path.join(repoRoot, directory),
 );
 const skipDirectories = new Set([

@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { CentralIcon, type CentralIconName } from "@/components/icons";
 import { Kbd, Section, Segmented, StatusDot, Switch } from "@/components/ui/primitives";
 import { HUB_PORT } from "@/runtime/protocol";
+import { GROUPS, screenName, screensOf } from "@/core/world";
 import type { ShowView } from "@/runtime/use-show";
 import { SCENES } from "@/scenes";
-import { SCENE_COUNT } from "@/runtime/protocol";
 
 const hostOf = (url: string | null) => (url ? new URL(url.replace(/^ws/, "http")).host : "");
 
@@ -107,24 +107,15 @@ function linkStatus(show: ShowView) {
 function ModesPage({ show }: { show: ShowView }) {
   return (
     <Section label={show.status === "online" ? "Every screen follows" : "This screen only, until it reaches the host"}>
-      {Array.from({ length: SCENE_COUNT }, (_, index) => {
-        const number = index + 1;
-        const scene = SCENES[number];
+      {Object.entries(SCENES).map(([key, scene]) => {
+        const number = Number(key);
         const active = number === show.scene;
         return (
-          <button
-            key={number}
-            type="button"
-            className="row"
-            data-active={active || undefined}
-            data-empty={!scene || undefined}
-            disabled={!scene}
-            onClick={() => show.actions.setScene(number)}
-          >
+          <button key={number} type="button" className="row" data-active={active || undefined} onClick={() => show.actions.setScene(number)}>
             <Kbd>{number}</Kbd>
             <div className="row__main">
-              <div className="row__title">{scene?.name ?? "Empty"}</div>
-              {scene && <div className="row__sub">{scene.description}</div>}
+              <div className="row__title">{scene.name}</div>
+              {scene.description && <div className="row__sub">{scene.description}</div>}
             </div>
             {active && <CentralIcon name="IconCheckmark1Small" size={18} stroke="1.5" />}
           </button>
@@ -134,7 +125,39 @@ function ModesPage({ show }: { show: ShowView }) {
   );
 }
 
-const screenOptions = (count: number) => Array.from({ length: count }, (_, index) => ({ value: index + 1, label: String(index + 1) }));
+function ScreenPicker({ value, onChange, label }: { value: number | null; onChange(screen: number): void; label: string }) {
+  return (
+    <div className="picker">
+      {GROUPS.map((group) => (
+        <div key={group.id} className="picker__group">
+          <span className="picker__label">{group.name}</span>
+          <Segmented
+            label={`${label}, ${group.name}`}
+            value={value ?? 0}
+            options={screensOf(group).map((screen, index) => ({ value: screen, label: String(index + 1) }))}
+            onChange={onChange}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ScreenSelect({ value, onChange, label }: { value: number | null; onChange(screen: number): void; label: string }) {
+  return (
+    <select className="select" aria-label={label} value={value ?? ""} onChange={(event) => onChange(Number(event.target.value))}>
+      {GROUPS.map((group) => (
+        <optgroup key={group.id} label={group.name}>
+          {screensOf(group).map((screen) => (
+            <option key={screen} value={screen}>
+              {screenName(screen)}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
 
 function ScreenPage({ show }: { show: ShowView }) {
   return (
@@ -147,11 +170,11 @@ function ScreenPage({ show }: { show: ShowView }) {
       <div className="row">
         <CentralIcon className="row__icon" name="IconStudioDisplay" size={18} stroke="1.5" />
         <div className="row__main">
-          <div className="row__title">Shows screen</div>
+          <div className="row__title">Shows {screenName(show.screen)}</div>
           <div className="row__sub">{show.self.label}</div>
         </div>
-        <Segmented label="Screen" value={show.screen} options={screenOptions(show.screens)} onChange={show.actions.setScreen} />
       </div>
+      <ScreenPicker label="Screen" value={show.screen} onChange={show.actions.setScreen} />
       <div className="row">
         <CentralIcon className="row__icon" name="IconLayoutGrid1" size={18} stroke="1.5" />
         <div className="row__main">
@@ -282,12 +305,7 @@ function ScreensPage({ show }: { show: ShowView }) {
             <div className="row__title">{entry.name}</div>
             <div className="row__sub">{entry.id === show.self.id ? `This screen · ${entry.label}` : entry.label}</div>
           </div>
-          <Segmented
-            label={`Screen for ${entry.name}`}
-            value={entry.screen ?? 0}
-            options={screenOptions(show.screens)}
-            onChange={(screen) => show.actions.assign(entry.id, screen)}
-          />
+          <ScreenSelect label={`Screen for ${entry.name}`} value={entry.screen} onChange={(screen) => show.actions.assign(entry.id, screen)} />
         </div>
       ))}
     </Section>

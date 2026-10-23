@@ -1,4 +1,4 @@
-import { smooth } from "./math";
+import { smooth } from "@/core/math";
 
 const MARQUEE_SPEED = 96;
 

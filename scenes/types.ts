@@ -1,7 +1,9 @@
 import type { ComponentType } from "react";
 import type { Scheduler } from "@/core/scheduler";
+import type { GroupId } from "@/core/world";
 
 export interface Viewport {
+  group: GroupId;
   left: number;
   width: number;
   height: number;

@@ -1,6 +1,6 @@
 const url = "http://localhost:3000";
 
-const next = Bun.spawn(["bun", "--bun", "next", "dev"], { stdio: ["inherit", "inherit", "inherit"] });
+const next = Bun.spawn(["bun", "run", "dev"], { stdio: ["inherit", "inherit", "inherit"] });
 
 while (true) {
   try {

@@ -1,5 +1,5 @@
-import { clamp, smooth } from "./math";
-import { palette, rgb } from "./palette";
+import { clamp, smooth } from "@/core/math";
+import { palette, rgb } from "@/core/palette";
 import type { PrintTexture } from "./dither";
 
 const SPRING_SECONDS = 1.5;

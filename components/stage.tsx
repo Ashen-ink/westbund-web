@@ -21,7 +21,7 @@ export function Stage() {
       if (event.key.toLowerCase() === "p") {
         event.preventDefault();
         setAsked((value) => !value);
-      } else if (/^[1-9]$/.test(event.key) && SCENES[Number(event.key)] && !document.querySelector("dialog[open]")) {
+      } else if (/^[1-9]$/.test(event.key) && !document.querySelector("dialog[open]")) {
         setScene(Number(event.key));
       }
     };
@@ -30,7 +30,7 @@ export function Stage() {
   }, [setScene]);
 
   if (!show.ready) return null;
-  const scene = SCENES[show.scene] ?? SCENES[1]!;
+  const scene = SCENES[show.scene] ?? SCENES[1];
   return (
     <>
       <Wall scene={scene} screen={show.screen} layout={show.layout} scheduler={scheduler} />

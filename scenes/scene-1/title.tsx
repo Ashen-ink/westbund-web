@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { palette } from "@/core/palette";
 import type { Scheduler } from "@/core/scheduler";
-import { marqueeOffset } from "@/core/timeline";
+import { marqueeOffset } from "./timeline";
 import { useFrame } from "@/hooks/use-frame";
 
 const START = 54;

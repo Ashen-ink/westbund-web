@@ -1,5 +1,5 @@
-import { smooth } from "./math";
-import { palette, rgb } from "./palette";
+import { smooth } from "@/core/math";
+import { palette, rgb } from "@/core/palette";
 
 const BAYER = [
   0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26,

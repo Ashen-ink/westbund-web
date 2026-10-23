@@ -2,7 +2,7 @@
 
 import gsap from "gsap";
 import { useEffect, useRef, type RefObject } from "react";
-import { COVERS } from "@/data/covers";
+import { COVERS } from "./covers";
 
 const SPAWN_DISTANCE = 100;
 const RADIUS = 3;
