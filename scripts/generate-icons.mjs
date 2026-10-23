@@ -19,7 +19,7 @@ const skipDirectories = new Set([
 ]);
 const sourceExtensions = new Set([".ts", ".tsx"]);
 
-const variants = ["outlined", "filled"].map((fill) => ({ join: "square", fill, radius: "0", stroke: "1.5" }));
+const variants = ["outlined", "filled"].map((fill) => ({ join: "round", fill, radius: "3", stroke: "1.5" }));
 
 function walk(directory, visit) {
   if (!fs.existsSync(directory)) return;

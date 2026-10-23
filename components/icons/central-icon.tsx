@@ -25,9 +25,9 @@ type Props = Omit<CentralIconBaseProps, "fill" | "radius" | "stroke"> & {
 
 export function CentralIcon({
   name,
-  join = "square",
+  join = "round",
   fill = "outlined",
-  radius = "0",
+  radius = "3",
   stroke = "1.5",
   size = 24,
   ariaHidden = true,
