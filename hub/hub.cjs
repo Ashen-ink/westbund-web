@@ -29,6 +29,24 @@ const TYPES = {
 
 const memoryStore = () => ({ load: () => null, save: () => {} });
 
+function mdnsErrorHandler() {
+  const reported = new Set();
+  return (error) => {
+    const key = error.code ?? error.message;
+    if (reported.has(key)) return;
+    reported.add(key);
+    console.warn("mDNS unavailable; screens can still join by address:", error.message);
+  };
+}
+
+function createBonjour(onError) {
+  // The callback handles reply failures; multicast-dns socket errors use events.
+  const bonjour = new Bonjour({}, onError);
+  bonjour.server.mdns.on("error", onError);
+  bonjour.server.mdns.on("warning", onError);
+  return bonjour;
+}
+
 function addresses() {
   return Object.values(os.networkInterfaces())
     .flat()
@@ -163,12 +181,14 @@ async function createHub({ port = PORT, name = os.hostname(), id = crypto.random
 
   let bonjour = null;
   let service = null;
+  const onMdnsError = mdnsErrorHandler();
   const announce = () => {
     try {
-      bonjour ??= new Bonjour();
+      bonjour ??= createBonjour(onMdnsError);
       service = bonjour.publish({ name, type: SERVICE, port: actualPort, txt: { id } });
+      service.on("error", onMdnsError);
     } catch (error) {
-      console.error("mDNS unavailable; screens must join by address:", error.message);
+      onMdnsError(error);
     }
   };
   announce();
@@ -210,10 +230,20 @@ async function createHub({ port = PORT, name = os.hostname(), id = crypto.random
 }
 
 function discover(onChange, { ignoreId } = {}) {
-  const bonjour = new Bonjour();
+  const onMdnsError = mdnsErrorHandler();
+  let bonjour;
+  let browser;
+  try {
+    bonjour = createBonjour(onMdnsError);
+    browser = bonjour.find({ type: SERVICE });
+    browser.on("error", onMdnsError);
+  } catch (error) {
+    onMdnsError(error);
+    bonjour?.destroy();
+    return () => {};
+  }
   const found = new Map();
   const report = () => onChange([...found].map(([hubName, address]) => ({ name: hubName, address })));
-  const browser = bonjour.find({ type: SERVICE });
   browser.on("up", (service) => {
     const address = service.addresses?.find((entry) => entry.includes("."));
     if (!address || service.txt?.id === ignoreId) return;

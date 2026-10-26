@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "bun --bun next dev",
     "build": "next build",
+    "electron": "bun run electron:dev",
     "electron:dev": "bun scripts/electron-dev.ts",
     "electron:start": "bun run build && electron .",
     "dist": "bun run build && electron-builder",
