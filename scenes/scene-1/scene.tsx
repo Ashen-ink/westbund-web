@@ -47,7 +47,7 @@ export function WestBundScene({ viewport, scheduler }: SceneProps) {
       {coversLeft < pixelWidth && coversLeft + coversWidth > 0 && (
         <>
           <div ref={area} style={{ position: "absolute", top: 0, left: coversLeft, width: coversWidth, height: pixelHeight, pointerEvents: "none" }} />
-          <PointerCovers area={area} />
+          <PointerCovers area={area} screenWidth={SCREEN_WIDTH * scale} />
         </>
       )}
     </>

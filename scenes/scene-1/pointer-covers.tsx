@@ -1,19 +1,23 @@
 "use client";
 
 import gsap from "gsap";
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, type RefObject } from "react";
+import { useBox } from "@/hooks/use-box";
 import { COVERS } from "./covers";
 
 const SPAWN_DISTANCE = 100;
 const RADIUS = 3;
 const SIZE = "clamp(220px, 20vw, 400px)";
 
-export function PointerCovers({ area }: { area: RefObject<HTMLElement | null> }) {
-  const layer = useRef<HTMLDivElement>(null);
+export function PointerCovers({ area, screenWidth }: { area: RefObject<HTMLElement | null>; screenWidth: number }) {
+  const [layer, box] = useBox<HTMLDivElement>();
+  // Match one preview screen to the full-window screen used by the original sizing.
+  const scale = box ? screenWidth / box.width : 1;
+  const size = `calc(${SIZE} * ${scale})`;
 
   useEffect(() => {
     const items = [...layer.current!.querySelectorAll("img")];
-    gsap.set(items, { xPercent: -50, yPercent: -50 });
+    gsap.set(items, { xPercent: -50, yPercent: -50, opacity: 0 });
     const animations = new Set<gsap.core.Timeline>();
     const pointer = { x: 0, y: 0 };
     const lag = { x: 0, y: 0 };
@@ -36,7 +40,7 @@ export function PointerCovers({ area }: { area: RefObject<HTMLElement | null> })
       const follow = 1 - 0.9 ** gsap.ticker.deltaRatio(120);
       lag.x += (pointer.x - lag.x) * follow;
       lag.y += (pointer.y - lag.y) * follow;
-      if (Math.hypot(pointer.x - last.x, pointer.y - last.y) > SPAWN_DISTANCE) {
+      if (Math.hypot(pointer.x - last.x, pointer.y - last.y) > SPAWN_DISTANCE * scale) {
         last.x = pointer.x;
         last.y = pointer.y;
         const item = items[next++ % items.length];
@@ -82,7 +86,7 @@ export function PointerCovers({ area }: { area: RefObject<HTMLElement | null> })
       stopTicking();
       animations.forEach((animation) => animation.kill());
     };
-  }, [area]);
+  }, [area, scale]);
 
   return (
     <div
@@ -107,9 +111,9 @@ export function PointerCovers({ area }: { area: RefObject<HTMLElement | null> })
               left: 0,
               display: "block",
               maxWidth: "none",
-              width: wide ? SIZE : "auto",
-              height: wide ? "auto" : SIZE,
-              borderRadius: RADIUS,
+              width: wide ? size : "auto",
+              height: wide ? "auto" : size,
+              borderRadius: RADIUS * scale,
               opacity: 0,
               userSelect: "none",
               willChange: "transform, opacity",
