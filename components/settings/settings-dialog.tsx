@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { CentralIcon, type CentralIconName } from "@/components/icons";
 import { Kbd, Section, Segmented, StatusDot, Switch } from "@/components/ui/primitives";
 import { HUB_PORT } from "@/runtime/protocol";
-import { GROUPS, screenName, screensOf } from "@/core/world";
+import { SCREEN_COUNT } from "@/core/world";
 import type { ShowView } from "@/runtime/use-show";
 import { SCENES } from "@/scenes";
 
@@ -125,39 +125,7 @@ function ModesPage({ show }: { show: ShowView }) {
   );
 }
 
-function ScreenPicker({ value, onChange, label }: { value: number | null; onChange(screen: number): void; label: string }) {
-  return (
-    <div className="picker">
-      {GROUPS.map((group) => (
-        <div key={group.id} className="picker__group">
-          <span className="picker__label">{group.name}</span>
-          <Segmented
-            label={`${label}, ${group.name}`}
-            value={value ?? 0}
-            options={screensOf(group).map((screen, index) => ({ value: screen, label: String(index + 1) }))}
-            onChange={onChange}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ScreenSelect({ value, onChange, label }: { value: number | null; onChange(screen: number): void; label: string }) {
-  return (
-    <select className="select" aria-label={label} value={value ?? ""} onChange={(event) => onChange(Number(event.target.value))}>
-      {GROUPS.map((group) => (
-        <optgroup key={group.id} label={group.name}>
-          {screensOf(group).map((screen) => (
-            <option key={screen} value={screen}>
-              {screenName(screen)}
-            </option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
-  );
-}
+const screenOptions = Array.from({ length: SCREEN_COUNT }, (_, index) => ({ value: index + 1, label: String(index + 1) }));
 
 function ScreenPage({ show }: { show: ShowView }) {
   return (
@@ -170,11 +138,11 @@ function ScreenPage({ show }: { show: ShowView }) {
       <div className="row">
         <CentralIcon className="row__icon" name="IconStudioDisplay" size={18} stroke="1.5" />
         <div className="row__main">
-          <div className="row__title">Shows {screenName(show.screen)}</div>
+          <div className="row__title">Shows screen</div>
           <div className="row__sub">{show.self.label}</div>
         </div>
+        <Segmented label="Screen" value={show.screen} options={screenOptions} onChange={show.actions.setScreen} />
       </div>
-      <ScreenPicker label="Screen" value={show.screen} onChange={show.actions.setScreen} />
       <div className="row">
         <CentralIcon className="row__icon" name="IconLayoutGrid1" size={18} stroke="1.5" />
         <div className="row__main">
@@ -305,7 +273,7 @@ function ScreensPage({ show }: { show: ShowView }) {
             <div className="row__title">{entry.name}</div>
             <div className="row__sub">{entry.id === show.self.id ? `This screen · ${entry.label}` : entry.label}</div>
           </div>
-          <ScreenSelect label={`Screen for ${entry.name}`} value={entry.screen} onChange={(screen) => show.actions.assign(entry.id, screen)} />
+          <Segmented label={`Screen for ${entry.name}`} value={entry.screen ?? 0} options={screenOptions} onChange={(screen) => show.actions.assign(entry.id, screen)} />
         </div>
       ))}
     </Section>
