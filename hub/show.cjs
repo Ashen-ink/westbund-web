@@ -1,4 +1,4 @@
-const SCREEN_COUNT = 9;
+const SCREEN_COUNT = 3;
 const SCENE_COUNT = 9;
 const LAYOUTS = ["screen", "overview"];
 
